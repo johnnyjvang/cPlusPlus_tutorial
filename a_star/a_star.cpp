@@ -15,7 +15,7 @@ using std::vector;
 
 enum class State { kEmpty, kObstacle, kClosed, kPath, kStart, kFinish };
 
-// Directional deltas
+// Directional deltas (up, left, down, right)
 const int delta[4][2]{
     {-1, 0}, {0, -1}, {1, 0}, {0, 1}
 };
@@ -28,11 +28,10 @@ vector<State> ParseLine(string line) {
     vector<State> row;
 
     while (sline >> n >> c && c == ',') {
-        if (n == 0) {
+        if (n == 0)
             row.push_back(State::kEmpty);
-        } else {
+        else
             row.push_back(State::kObstacle);
-        }
     }
     return row;
 }
@@ -48,6 +47,8 @@ vector<vector<State>> ReadBoardFile(string path) {
             vector<State> row = ParseLine(line);
             board.push_back(row);
         }
+    } else {
+        cout << "❌ Error: Unable to open file: " << path << "\n";
     }
     return board;
 }
@@ -74,9 +75,9 @@ bool CheckValidCell(int x, int y, vector<vector<State>>& grid) {
     bool on_grid_x = (x >= 0 && x < grid.size());
     bool on_grid_y = (y >= 0 && y < grid[0].size());
 
-    if (on_grid_x && on_grid_y) {
+    if (on_grid_x && on_grid_y)
         return grid[x][y] == State::kEmpty;
-    }
+
     return false;
 }
 
@@ -92,7 +93,6 @@ void AddToOpen(int x, int y, int g, int h,
 void ExpandNeighbors(const vector<int>& current, int goal[2],
                      vector<vector<int>>& openlist,
                      vector<vector<State>>& grid) {
-    // Current node’s data
     int x = current[0];
     int y = current[1];
     int g = current[2];
@@ -115,7 +115,6 @@ vector<vector<State>> Search(vector<vector<State>> grid,
                              int init[2], int goal[2]) {
     vector<vector<int>> open{};
 
-    // Initialize start node
     int x = init[0];
     int y = init[1];
     int g = 0;
@@ -123,7 +122,6 @@ vector<vector<State>> Search(vector<vector<State>> grid,
     AddToOpen(x, y, g, h, open, grid);
 
     while (!open.empty()) {
-        // Get next node
         CellSort(&open);
         auto current = open.back();
         open.pop_back();
@@ -138,11 +136,9 @@ vector<vector<State>> Search(vector<vector<State>> grid,
             return grid;
         }
 
-        // Otherwise expand neighbors
         ExpandNeighbors(current, goal, open, grid);
     }
 
-    // No path found
     cout << "No path found!\n";
     return {};
 }
@@ -159,31 +155,35 @@ string CellString(State cell) {
 }
 
 // Print the board
-void PrintBoard(const vector<vector<State>> board) {
-    for (int i = 0; i < board.size(); i++) {
-        for (int j = 0; j < board[i].size(); j++) {
-            cout << CellString(board[i][j]);
-        }
+void PrintBoard(const vector<vector<State>>& board) {
+    for (auto& row : board) {
+        for (auto& cell : row)
+            cout << CellString(cell);
         cout << "\n";
     }
 }
 
-#include "test.cpp"
-
 int main() {
-    int init[2]{0, 0};
-    int goal[2]{4, 5};
+    auto board = ReadBoardFile("numeric_board.txt");
 
-    auto board = ReadBoardFile("1.board");
+    if (board.empty()) {
+        cout << "Error: board could not be loaded.\n";
+        return 1;
+    }
+
+    int rows = board.size();
+    int cols = board[0].size();
+
+    // Set start and goal dynamically
+    int init[2]{0, 0};                   // top-left corner
+    int goal[2]{rows - 1, cols - 1};     // bottom-right corner
+
+    cout << "Grid size: " << rows << "x" << cols << "\n";
+    cout << "Start: (0, 0)\n";
+    cout << "Goal: (" << rows - 1 << ", " << cols - 1 << ")\n\n";
+
     auto solution = Search(board, init, goal);
-
     PrintBoard(solution);
 
-    // Tests
-    TestHeuristic();
-    TestAddToOpen();
-    TestCompare();
-    TestSearch();
-    TestCheckValidCell();
-    TestExpandNeighbors();
+    return 0;
 }
